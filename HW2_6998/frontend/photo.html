@@ -1,0 +1,166 @@
+<html>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script type="text/javascript" src="apiGateway-js-sdk/lib/axios/dist/axios.standalone.js"></script>
+    <script type="text/javascript" src="apiGateway-js-sdk/lib/CryptoJS/rollups/hmac-sha256.js"></script>
+    <script type="text/javascript" src="apiGateway-js-sdk/lib/CryptoJS/rollups/sha256.js"></script>
+    <script type="text/javascript" src="apiGateway-js-sdk/lib/CryptoJS/components/hmac.js"></script>
+    <script type="text/javascript" src="apiGateway-js-sdk/lib/CryptoJS/components/enc-base64.js"></script>
+    <script type="text/javascript" src="apiGateway-js-sdk/lib/url-template/url-template.js"></script>
+    <script type="text/javascript" src="apiGateway-js-sdk/lib/apiGatewayCore/sigV4Client.js"></script>
+    <script type="text/javascript" src="apiGateway-js-sdk/lib/apiGatewayCore/apiGatewayClient.js"></script>
+    <script type="text/javascript" src="apiGateway-js-sdk/lib/apiGatewayCore/simpleHttpClient.js"></script>
+    <script type="text/javascript" src="apiGateway-js-sdk/lib/apiGatewayCore/utils.js"></script>
+    <script type="text/javascript" src="apiGateway-js-sdk/apigClient.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .r1{
+            font-size: medium;
+            color: green;
+        }
+        .up{
+            margin-top: 5px;
+        }
+    </style>
+    <head>
+        <head>
+            <!-- Required meta tags -->
+            <meta charset="utf-8">
+        
+            <!-- Bootstrap CSS -->
+            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    </head>
+    <body>
+        <div class="container">
+            <div class="row up">
+                <div class="col-md-6 r1">Photo Upload</div>
+                <div class="col-md-6"></div>
+            </div>
+            <div class="row up">
+                <div class="col-md-4">File Name: <input type="text" id="fileName"></div>
+            </div>
+            <div class="row up">
+                <div class="col-md-4">Custom Labels: <input type="text" id="labels"></div>
+            </div>
+            <div class="row up">
+                <form enctype="multipart/form-data" method="put">
+                    <div class="col-md-3"><input type="file" id="myFile"></div>
+                </form>
+                <div class="col-md-2"><button type="button" id="upload" name="upload">Upload</button></div>
+            </div>
+            <div class="row up">
+                <div class="col-md-6 r1">Photo Search</div>
+                <div class="col-md-6"></div>
+            </div>
+            <div class="row up">
+                <div class="col-md-6">
+                    <input type="text" id="keyword" name="keyword">
+                    <button type="button" id="search" name="search">Search</button>
+                    <button type="button" id="speech" name="speech">Speak</button>
+                    <div id="result"></div>  
+                </div>
+            </div>
+        </div>
+    </body>
+    <script>
+        //$.support.cors = true
+        const config =  {
+            invokeUrl:'https://8k36hbedpj.execute-api.us-east-1.amazonaws.com',
+            accessKey: 'AKIAZEIUVIM3R4G6GYJU',
+            secretKey: '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',
+            region: 'us-east-1',
+            apiKey: undefined
+        }
+        var apigClient = apigClientFactory.newClient(config)
+        $(document).ready(function(){
+            $("#search").click(function(event){
+                let key = $("#keyword").val()
+                let params = {
+                    "q": key
+                }
+                let body = {}
+                let additionalParams = {
+                    headers:{
+                        "Accept": "*",
+                        "X-Api-Key":"NRGdY0M7wd4JV3jPhUbfr2RUwNOin2697Vfp9Nxa"
+                    }  
+                }
+                apigClient.searchGet(params, body, additionalParams).then(function(result)
+                    {
+                        // success callback
+                        console.log('good job '+result.data)
+                        $("#result").html(result.data)
+                    }).catch( function(result){
+                    // error callback
+                        console.log('error '+result.data)
+                    })
+            })
+            $("#upload").click(function(event){
+                let name = $("#fileName").val()
+                let file = $("#myFile")[0].files[0]
+                console.log(file.type)
+                console.log(file.name)
+                //console.log(file)
+                let filereader = new FileReader()
+                filereader.onload = function (event) {
+                    //let base64String = filereader.result.replace(/^data:image\/\w+;base64,/, "")
+                    let base64String = filereader.result
+                    base64String = base64String.replace(/\\n/g, "").replace(/['"]+/g, '')
+                    console.log(base64String)
+                    apigClient.uploadCcphoto1FilenamePut(params, base64String, additionalParams).then(function(result)
+                    {
+                    // success callback
+                        console.log('good job')
+                    }).catch( function(result){
+                    // error callback
+                        console.log('error '+result.data)
+                    })
+                }
+                //filereader.readAsDataURL(file)
+                var params = {
+                    "filename": name,
+                    "x-amz-meta-customLabels": $("#labels").val(),
+                    "Accept": "*/*",
+                    "Content-Type": file.type,
+
+                }
+                var additionalParams = {
+                    headers: {
+                        "x-amz-meta-customLabels": $("#labels").val(),
+                        "Content-Type": file.type,
+                        "X-Api-Key":"NRGdY0M7wd4JV3jPhUbfr2RUwNOin2697Vfp9Nxa"
+                    }
+                }
+                let url = "https://8k36hbedpj.execute-api.us-east-1.amazonaws.com/beta/upload/ccphoto1/" + name
+                axios.put(url, file, additionalParams).then(function (response) {
+                    console.log("good job")
+                }).catch(function (error) {
+                    console.log(error)
+                })
+            })
+            $("#speech").click(function(event){
+                let speech = true
+                window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+                const recognition = new SpeechRecognition()
+                recognition.interimResults = true
+                console.log("start listening")
+                recognition.addEventListener('result', e => {
+                    console.log('triggered')
+                    const transcript = Array.from(e.results)
+                        .map(result => result[0])
+                        .map(result => result.transcript)
+                        .join('')
+                    console.log(transcript)
+                    alert(transcript)
+                    $("#keyword").focus()
+                    document.querySelector('input[name="keyword"]').value = transcript
+                    //recognition.stop()
+                })
+          
+                if (speech == true) {
+                    recognition.start()
+                    recognition.addEventListener('end', recognition.start)
+                }
+            })
+        })
+    </script>
+</html>
